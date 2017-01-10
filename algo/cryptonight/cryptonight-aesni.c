@@ -171,7 +171,7 @@ void cryptonight_hash_aes( void *restrict output, const void *input, int len )
 	c_x = _mm_aesenc_si128(c_x, a_x);
 
 	_mm_store_si128((__m128i *)c, c_x);
-	__builtin_prefetch(&ctx.long_state[c[0] & 0x1FFFF0], 0, 1);
+//	__builtin_prefetch(&ctx.long_state[c[0] & 0x1FFFF0], 0, 1);
 	
 	b_x = _mm_xor_si128(b_x, c_x);
 	_mm_store_si128((__m128i *)&ctx.long_state[a[0] & 0x1FFFF0], b_x);
@@ -202,7 +202,7 @@ void cryptonight_hash_aes( void *restrict output, const void *input, int len )
 	a[0] ^= b[0];
 	a[1] ^= b[1];
 	b_x = c_x;
-	__builtin_prefetch(&ctx.long_state[a[0] & 0x1FFFF0], 0, 3);
+//	__builtin_prefetch(&ctx.long_state[a[0] & 0x1FFFF0], 0, 3);
     }
 
     memcpy(ctx.text, ctx.state.init, INIT_SIZE_BYTE);
