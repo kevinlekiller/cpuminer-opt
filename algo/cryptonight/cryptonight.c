@@ -69,13 +69,13 @@ static void do_groestl_hash(const void* input, size_t len, char* output) {
 }
 
 static void do_jh_hash(const void* input, size_t len, char* output) {
-	int r = jh_hash(HASH_SIZE * 8, input, 8 * len, (uint8_t*)output);
-	assert(likely(SUCCESS == r));
+    int r = jh_hash(HASH_SIZE * 8, input, 8 * len, (uint8_t*)output);
+    assert(SUCCESS == r);
 }
 
 static void do_skein_hash(const void* input, size_t len, char* output) {
-	int r = skein_hash(8 * HASH_SIZE, input, 8 * len, (uint8_t*)output);
-	assert(likely(SKEIN_SUCCESS == r));
+    int r = skein_hash(8 * HASH_SIZE, input, 8 * len, (uint8_t*)output);
+    assert(SKEIN_SUCCESS == r);
 }
 
 extern int aesb_single_round(const uint8_t *in, uint8_t*out, const uint8_t *expandedKey);

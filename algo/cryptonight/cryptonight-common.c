@@ -84,14 +84,14 @@ int scanhash_cryptonight( int thr_id, struct work *work, uint32_t max_nonce,
     uint32_t hash[32 / 4] __attribute__((aligned(32)));
     do
     {
-       *nonceptr = ++n;
-       cryptonight_hash( hash, pdata, 76 );
-       if (unlikely( hash[7] < Htarg ))
-       {
-           *hashes_done = n - first_nonce + 1;
-	   return true;
-       }
-    } while (likely((n <= max_nonce && !work_restart[thr_id].restart)));
+        *nonceptr = ++n;
+        cryptonight_hash( hash, pdata, 76 );
+        if (hash[7] < Htarg)
+        {
+            *hashes_done = n - first_nonce + 1;
+            return true;
+        }
+    } while ((n <= max_nonce && !work_restart[thr_id].restart));
     
     *hashes_done = n - first_nonce + 1;
     return 0;
