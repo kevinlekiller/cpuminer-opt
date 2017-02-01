@@ -54,7 +54,7 @@ void init_sib_ctx()
      sph_echo512_init( &sib_ctx.echo );
 #else
      init_echo( &sib_ctx.echo, 512 );
-     init_groestl( &sib_ctx.groestl );
+     init_groestl( &sib_ctx.groestl, 64 );
 #endif
 
 }
@@ -113,7 +113,7 @@ void sibhash(void *output, const void *input)
      sph_gost512(&ctx.gost, hashA, 64);
      sph_gost512_close(&ctx.gost, hashB);
 
-     update_luffa( &ctx.luffa, (const BitSequence*)hashB,512);
+     update_luffa( &ctx.luffa, (const BitSequence*)hashB,64);
      final_luffa( &ctx.luffa, (BitSequence*)hashA);
 
      cubehashUpdate( &ctx.cube, (const byte*) hashA,64);
@@ -181,4 +181,5 @@ bool register_sib_algo( algo_gate_t* gate )
     gate->hash     = (void*)&sibhash;
     gate->hash_alt = (void*)&sibhash;
     gate->get_max64 = (void*)&get_max64_0x3ffff;
+    return true;
 }

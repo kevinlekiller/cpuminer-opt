@@ -12,7 +12,7 @@
 #include "algo/keccak/sph_keccak.h"
 #include "algo/skein/sph_skein.h"
 #include "algo/shavite/sph_shavite.h"
-#include "algo/luffa/sph_luffa.h"
+#include "algo/luffa/sse2/luffa_for_sse2.h"
 #include "algo/hamsi/sph_hamsi.h"
 #include "algo/fugue/sph_fugue.h"
 #include "algo/shabal/sph_shabal.h"
@@ -36,7 +36,7 @@ typedef struct {
         sph_skein512_context    skein;
         sph_jh512_context       jh;
         sph_keccak512_context   keccak;
-        sph_luffa512_context    luffa;
+        hashState_luffa         luffa;
         cubehashParam           cubehash;
         sph_shavite512_context  shavite;
         hashState_sd            simd;
@@ -64,7 +64,7 @@ void init_xevan_ctx()
         sph_skein512_init(&xevan_ctx.skein);
         sph_jh512_init(&xevan_ctx.jh);
         sph_keccak512_init(&xevan_ctx.keccak);
-        sph_luffa512_init(&xevan_ctx.luffa);
+        init_luffa( &xevan_ctx.luffa, 512 );
         cubehashInit( &xevan_ctx.cubehash, 512, 16, 32 );
         sph_shavite512_init( &xevan_ctx.shavite );
         init_sd( &xevan_ctx.simd, 512 );
@@ -78,14 +78,14 @@ void init_xevan_ctx()
         sph_groestl512_init( &xevan_ctx.groestl );
         sph_echo512_init( &xevan_ctx.echo );
 #else
-        init_groestl( &xevan_ctx.groestl );
+        init_groestl( &xevan_ctx.groestl, 64 );
         init_echo( &xevan_ctx.echo, 512 );
 #endif
 };
 
 void xevan_hash(void *output, const void *input)
 {
-	uint32_t _ALIGN(64) hash[32]; // 128 bytes required
+        uint32_t _ALIGN(64) hash[32]; // 128 bytes required
 	const int dataLen = 128;
 
         xevan_ctx_holder ctx;
@@ -103,8 +103,8 @@ void xevan_hash(void *output, const void *input)
 	sph_groestl512(&ctx.groestl, hash, dataLen);
 	sph_groestl512_close(&ctx.groestl, hash);
 #else
-        update_groestl( &ctx.groestl, (char*)hash, 1024 );
-        final_groestl( &ctx.groestl, (char*)hash );
+        update_and_final_groestl( &ctx.groestl, (char*)hash, 
+                                  (const char*)hash, dataLen*8 );
 #endif
 
 	sph_skein512(&ctx.skein, hash, dataLen);
@@ -116,24 +116,24 @@ void xevan_hash(void *output, const void *input)
 	sph_keccak512(&ctx.keccak, hash, dataLen);
 	sph_keccak512_close(&ctx.keccak, hash);
 
-	sph_luffa512(&ctx.luffa, hash, dataLen);
-	sph_luffa512_close(&ctx.luffa, hash);
+        update_and_final_luffa( &ctx.luffa, (BitSequence*)hash,
+                                (const BitSequence*)hash, dataLen );
 
-        cubehashUpdate( &ctx.cubehash, (const byte*) hash, dataLen );
-        cubehashDigest( &ctx.cubehash, (byte*)hash);
+        cubehashUpdateDigest( &ctx.cubehash, (byte*)hash,
+                              (const byte*) hash, dataLen );
 
 	sph_shavite512(&ctx.shavite, hash, dataLen);
 	sph_shavite512_close(&ctx.shavite, hash);
 
-        update_sd( &ctx.simd, (const BitSequence *)hash, 1024 );
-        final_sd( &ctx.simd, (BitSequence *)hash );
+        update_final_sd( &ctx.simd, (BitSequence *)hash,
+                         (const BitSequence *)hash, dataLen*8 );
 
 #ifdef NO_AES_NI
 	sph_echo512(&ctx.echo, hash, dataLen);
 	sph_echo512_close(&ctx.echo, hash);
 #else
-        update_echo ( &ctx.echo, (const BitSequence *) hash, 1024 );
-        final_echo( &ctx.echo, (BitSequence *) hash );
+        update_final_echo( &ctx.echo, (BitSequence *) hash, 
+                           (const BitSequence *) hash, dataLen*8 );
 #endif
 
 	sph_hamsi512(&ctx.hamsi, hash, dataLen);
@@ -168,8 +168,8 @@ void xevan_hash(void *output, const void *input)
         sph_groestl512(&ctx.groestl, hash, dataLen);
         sph_groestl512_close(&ctx.groestl, hash);
 #else
-        update_groestl( &ctx.groestl, (char*)hash, 1024 );
-        final_groestl( &ctx.groestl, (char*)hash );
+        update_and_final_groestl( &ctx.groestl, (char*)hash,
+                                  (const BitSequence*)hash, dataLen*8 );
 #endif
 
 	sph_skein512(&ctx.skein, hash, dataLen);
@@ -180,25 +180,24 @@ void xevan_hash(void *output, const void *input)
 
 	sph_keccak512(&ctx.keccak, hash, dataLen);
 	sph_keccak512_close(&ctx.keccak, hash);
+        update_and_final_luffa( &ctx.luffa, (BitSequence*)hash,
+                                (const BitSequence*)hash, dataLen );
 
-	sph_luffa512(&ctx.luffa, hash, dataLen);
-	sph_luffa512_close(&ctx.luffa, hash);
-
-        cubehashUpdate( &ctx.cubehash, (const byte*) hash, dataLen );
-        cubehashDigest( &ctx.cubehash, (byte*)hash);
+        cubehashUpdateDigest( &ctx.cubehash, (byte*)hash,
+                              (const byte*) hash, dataLen );
 
 	sph_shavite512(&ctx.shavite, hash, dataLen);
 	sph_shavite512_close(&ctx.shavite, hash);
 
-        update_sd( &ctx.simd, (const BitSequence *)hash, 1024 );
-        final_sd( &ctx.simd, (BitSequence *)hash );
+        update_final_sd( &ctx.simd, (BitSequence *)hash,
+                         (const BitSequence *)hash, dataLen*8 );
 
 #ifdef NO_AES_NI
         sph_echo512(&ctx.echo, hash, dataLen);
         sph_echo512_close(&ctx.echo, hash);
 #else
-        update_echo ( &ctx.echo, (const BitSequence *) hash, 1024 );
-        final_echo( &ctx.echo, (BitSequence *) hash );
+        update_final_echo( &ctx.echo, (BitSequence *) hash,
+                           (const BitSequence *) hash, dataLen*8 );
 #endif
 
 	sph_hamsi512(&ctx.hamsi, hash, dataLen);

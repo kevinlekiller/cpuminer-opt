@@ -63,11 +63,11 @@ x17_ctx_holder x17_ctx;
 void init_x17_ctx()
 {
 #ifdef NO_AES_NI
-        sph_groestl512_init(&x17_ctx.groestl);
+        sph_groestl512_init(&x17_ctx.groestl );
         sph_echo512_init(&x17_ctx.echo);
 #else
         init_echo( &x17_ctx.echo, 512 );
-        init_groestl( &x17_ctx.groestl );
+        init_groestl( &x17_ctx.groestl, 64 );
 #endif
         init_luffa( &x17_ctx.luffa, 512 );
         cubehashInit( &x17_ctx.cubehash, 512, 16, 32 );
@@ -146,7 +146,7 @@ static void x17hash(void *output, const void *input)
         KEC_C;
 
         //--- luffa7
-        update_luffa( &ctx.luffa, (const BitSequence*)hash,512);
+        update_luffa( &ctx.luffa, (const BitSequence*)hash,64);
         final_luffa( &ctx.luffa, (BitSequence*)hashB);
 
         // 8 Cube

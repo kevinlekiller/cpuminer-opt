@@ -63,7 +63,7 @@ void init_x15_ctx()
         sph_echo512_init(&x15_ctx.echo);
 #else
         init_echo( &x15_ctx.echo, 512 );
-        init_groestl( &x15_ctx.groestl );
+        init_groestl( &x15_ctx.groestl, 64 );
 #endif
         init_luffa( &x15_ctx.luffa, 512 );
         cubehashInit( &x15_ctx.cubehash, 512, 16, 32 );
@@ -140,7 +140,7 @@ static void x15hash(void *output, const void *input)
         KEC_C;
 
         //--- luffa7
-        update_luffa( &ctx.luffa, (const BitSequence*)hash,512);
+        update_luffa( &ctx.luffa, (const BitSequence*)hash,64);
         final_luffa( &ctx.luffa, (BitSequence*)hashB);
 
         // 8 Cube
